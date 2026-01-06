@@ -2,14 +2,69 @@
 // (Firebase is already initialized in firebase-config.js)
 const db = firebase.database();
 
+class AudioController {
+    constructor() {
+        this.ctx = null;
+        this.initialized = false;
+    }
+
+    init() {
+        if (!this.initialized) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
+        }
+    }
+
+    playTone(freq, type, duration, startTime = 0) {
+        if (!this.initialized) this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + startTime);
+
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(this.ctx.currentTime + startTime);
+        osc.stop(this.ctx.currentTime + startTime + duration);
+    }
+
+    playCorrect(combo) {
+        // Success chord (C major-ish)
+        this.playTone(523.25, 'sine', 0.1, 0); // C5
+        this.playTone(659.25, 'sine', 0.1, 0.05); // E5
+
+        // Pitch goes up with combo
+        if (combo > 1) {
+            const bonusPitch = Math.min(combo * 50, 500);
+            this.playTone(1046.5 + bonusPitch, 'triangle', 0.2, 0.1);
+        }
+    }
+
+    playWrong() {
+        // Dissonant low tone
+        this.playTone(150, 'sawtooth', 0.2, 0);
+        this.playTone(142, 'sawtooth', 0.2, 0.05);
+    }
+}
+
 class Game {
     constructor() {
+        this.audio = new AudioController();
+        this.combo = 0;
         this.score = 0;
         this.timeLeft = 60;
         this.isPlaying = false;
         this.timerInterval = null;
         this.currentProblem = {};
         this.userInput = "";
+
 
         // DOM Elements
         this.screens = {
@@ -23,6 +78,8 @@ class Game {
         this.equationEl = document.getElementById('equation');
         this.finalScoreEl = document.getElementById('final-score');
         this.feedbackEl = document.getElementById('feedback');
+        this.comboEl = document.getElementById('combo-display');
+
 
         // High Score Elements
         this.playerNameInput = document.getElementById('player-name');
@@ -89,7 +146,11 @@ class Game {
     }
 
     start() {
+        // Initialize Audio Context on user interaction
+        this.audio.init();
+
         this.score = 0;
+        this.combo = 0;
         this.timeLeft = 60;
         this.isPlaying = true;
         this.userInput = "";
@@ -242,8 +303,10 @@ class Game {
         this.userInput = "";
         this.currentProblem = this.generateProblem();
         this.renderEquation();
-        this.feedbackEl.textContent = "";
+        // Don't clear feedback immediately if showing combo, but for now logic is simple
+        // this.feedbackEl.textContent = ""; 
     }
+
 
     generateProblem() {
         const type = Math.random() < 0.5 ? 'left' : 'right';
@@ -299,12 +362,22 @@ class Game {
         }
 
         if (val === correctVal) {
-            this.score += 10;
+            // Correct
+            this.combo++;
+
+            // Score calculation: Base 10 + (Combo * 2)
+            const pts = 10 + (this.combo > 1 ? (this.combo - 1) * 2 : 0);
+            this.score += pts;
+
             this.updateScore();
             this.showFeedback(true);
+            this.audio.playCorrect(this.combo);
             this.nextProblem();
         } else {
+            // Incorrect
+            this.combo = 0;
             this.showFeedback(false);
+            this.audio.playWrong();
             this.shakeScreen();
             this.userInput = "";
             this.updateDisplay();
@@ -312,7 +385,23 @@ class Game {
     }
 
     showFeedback(isCorrect) {
-        if (!isCorrect) {
+        if (isCorrect) {
+            this.feedbackEl.textContent = ""; // Clear old
+            if (this.combo > 1) {
+                this.comboEl.textContent = `${this.combo} COMBO!`;
+                this.comboEl.classList.remove('pop-combo');
+                void this.comboEl.offsetWidth;
+                this.comboEl.classList.add('pop-combo');
+
+                // Colors change with higher combos
+                if (this.combo >= 5) this.comboEl.style.color = '#ff00ff'; // Magenta
+                else if (this.combo >= 3) this.comboEl.style.color = '#00ffff'; // Cyan
+                else this.comboEl.style.color = '#ffd700'; // Gold
+            } else {
+                this.comboEl.textContent = "";
+            }
+        } else {
+            this.comboEl.textContent = "";
             this.feedbackEl.textContent = "ざんねん！";
             this.feedbackEl.style.color = '#ef4444';
         }

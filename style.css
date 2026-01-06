@@ -26,7 +26,6 @@ body {
     justify-content: center;
     align-items: center;
     background: #0f172a;
-    /* Fallback */
 }
 
 /* Dynamic Background */
@@ -72,6 +71,8 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    padding-bottom: 0;
+    justify-content: flex-start;
 }
 
 .screen {
@@ -83,10 +84,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    padding-bottom: 4rem;
-    /* space for bottom interaction */
+    justify-content: flex-start;
+    padding: 1.5rem;
+    padding-bottom: 2rem;
+    overflow-y: auto;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -99,6 +100,12 @@ body {
     transform: scale(1);
 }
 
+#game-screen {
+    justify-content: space-between;
+    padding-bottom: 1.5rem;
+    overflow-y: hidden;
+}
+
 /* Typography & Common */
 h1.title {
     font-family: var(--font-heading);
@@ -108,12 +115,6 @@ h1.title {
     margin-bottom: 1rem;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     width: 100%;
-}
-
-.subtitle {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    font-weight: 400;
 }
 
 .description {
@@ -183,7 +184,7 @@ h1.title {
     width: 100%;
 }
 
-/* Game Screen */
+/* Game Header */
 .game-header {
     width: 100%;
     display: flex;
@@ -216,9 +217,16 @@ h1.title {
     font-variant-numeric: tabular-nums;
 }
 
+/* Problem Area */
 .problem-area {
-    margin: 2rem 0;
+    margin: 0.5rem 0;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    flex-shrink: 0;
 }
 
 .equation {
@@ -251,6 +259,38 @@ h1.title {
     margin-top: 0.5rem;
     font-size: 1.2rem;
     font-weight: bold;
+}
+
+/* Combo Styles */
+.combo-display {
+    height: 1.8rem;
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-family: var(--font-heading);
+    margin-bottom: 0.2rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    color: #ffd700;
+}
+
+@keyframes pop-combo {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pop-combo {
+    animation: pop-combo 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Numpad */
@@ -296,16 +336,12 @@ h1.title {
 .num-btn.enter-btn {
     background: rgba(34, 197, 94, 0.4);
     font-size: 1.2rem;
-    grid-column: span 2;
-    /* Make Enter button wider if positioned differently, or keep standardized */
     grid-column: 2 / 4;
 }
 
-/* Re-arrange grid for 0 at bottom */
 .num-btn[data-val="0"] {
     grid-column: 1 / 2;
 }
-
 
 .hint {
     margin-top: 1rem;
@@ -372,7 +408,6 @@ h1.title {
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
 
-/* Save Score Area */
 .save-score-area {
     display: flex;
     flex-direction: column;
@@ -457,43 +492,11 @@ h1.title {
     color: #cd7f32;
 }
 
-/* =========================================
-   Responsive & Fixes
-   ========================================= */
-
-/* Fix for cut-off content: Ensure container handles overflow gracefully or fits content */
-.game-container {
-    /* Ensure there's always space */
-    padding-bottom: 0;
-    justify-content: flex-start;
-    /* Align content to top */
-}
-
-/* Ensure padding doesn't push content out on small screens */
-.screen {
-    padding: 1.5rem;
-    padding-bottom: 2rem;
-    justify-content: flex-start;
-    /* Start from top to avid cutting off header */
-    overflow-y: auto;
-    /* Allow scrolling if absolutely necessary on very short screens */
-}
-
-/* Adjust Game Screen specifically to keep header at top */
-#game-screen {
-    justify-content: space-between;
-    /* Header top, Numpad bottom */
-    padding-bottom: 1.5rem;
-    overflow-y: hidden;
-    /* Prevent scroll on main game if possible */
-}
-
-/* Mobile Adjustments */
+/* Mobile Changes */
 @media (max-width: 480px) {
     .game-container {
         width: 100%;
         height: 100dvh;
-        /* Use dynamic viewport height for mobile browsers */
         border-radius: 0;
         border: none;
         max-height: none;
@@ -502,13 +505,10 @@ h1.title {
     .screen {
         padding: 1rem;
         padding-top: 1rem;
-        /* Less top padding */
     }
 
-    /* Typography downsizing */
     h1.title {
         font-size: 2rem;
-        /* Smaller title */
         margin-bottom: 0.5rem;
     }
 
@@ -517,7 +517,6 @@ h1.title {
         margin-bottom: 1.5rem;
     }
 
-    /* Game Header */
     .game-header {
         padding-top: 0.5rem;
         margin-bottom: 1rem;
@@ -538,15 +537,12 @@ h1.title {
         font-size: 0.7rem;
     }
 
-    /* Equation Area */
     .problem-area {
         margin: 1rem 0;
-        /* Less margin */
     }
 
     .equation {
         font-size: 2.5rem;
-        /* Smaller equation */
     }
 
     .feedback {
@@ -554,10 +550,8 @@ h1.title {
         font-size: 1rem;
     }
 
-    /* Numpad compacting */
     .numpad {
         gap: 8px;
-        /* Tighter gap */
         max-width: 100%;
     }
 
@@ -569,10 +563,8 @@ h1.title {
 
     .hint {
         display: none;
-        /* Hide keyboard hint on mobile */
     }
 
-    /* Result Screen adjustments */
     .big-score {
         font-size: 4.5rem;
         margin-bottom: 1rem;
