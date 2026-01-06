@@ -456,3 +456,136 @@ h1.title {
 .rank-3 {
     color: #cd7f32;
 }
+
+/* =========================================
+   Responsive & Fixes
+   ========================================= */
+
+/* Fix for cut-off content: Ensure container handles overflow gracefully or fits content */
+.game-container {
+    /* Ensure there's always space */
+    padding-bottom: 0;
+    justify-content: flex-start;
+    /* Align content to top */
+}
+
+/* Ensure padding doesn't push content out on small screens */
+.screen {
+    padding: 1.5rem;
+    padding-bottom: 2rem;
+    justify-content: flex-start;
+    /* Start from top to avid cutting off header */
+    overflow-y: auto;
+    /* Allow scrolling if absolutely necessary on very short screens */
+}
+
+/* Adjust Game Screen specifically to keep header at top */
+#game-screen {
+    justify-content: space-between;
+    /* Header top, Numpad bottom */
+    padding-bottom: 1.5rem;
+    overflow-y: hidden;
+    /* Prevent scroll on main game if possible */
+}
+
+/* Mobile Adjustments */
+@media (max-width: 480px) {
+    .game-container {
+        width: 100%;
+        height: 100dvh;
+        /* Use dynamic viewport height for mobile browsers */
+        border-radius: 0;
+        border: none;
+        max-height: none;
+    }
+
+    .screen {
+        padding: 1rem;
+        padding-top: 1rem;
+        /* Less top padding */
+    }
+
+    /* Typography downsizing */
+    h1.title {
+        font-size: 2rem;
+        /* Smaller title */
+        margin-bottom: 0.5rem;
+    }
+
+    .description {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Game Header */
+    .game-header {
+        padding-top: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .score-box,
+    .timer-box {
+        min-width: 70px;
+        padding: 0.25rem 0.5rem;
+    }
+
+    #score,
+    #timer {
+        font-size: 1.5rem;
+    }
+
+    .label {
+        font-size: 0.7rem;
+    }
+
+    /* Equation Area */
+    .problem-area {
+        margin: 1rem 0;
+        /* Less margin */
+    }
+
+    .equation {
+        font-size: 2.5rem;
+        /* Smaller equation */
+    }
+
+    .feedback {
+        height: 1.2rem;
+        font-size: 1rem;
+    }
+
+    /* Numpad compacting */
+    .numpad {
+        gap: 8px;
+        /* Tighter gap */
+        max-width: 100%;
+    }
+
+    .num-btn {
+        padding: 0.8rem 0;
+        font-size: 1.5rem;
+        border-radius: 12px;
+    }
+
+    .hint {
+        display: none;
+        /* Hide keyboard hint on mobile */
+    }
+
+    /* Result Screen adjustments */
+    .big-score {
+        font-size: 4.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .result-title {
+        font-size: 2.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn {
+        font-size: 1.2rem;
+        padding: 0.8rem 2rem;
+        min-width: 160px;
+    }
+}
