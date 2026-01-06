@@ -1,21 +1,3 @@
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyDhePsbzObaE91wzG0cKNhDpXm1xmdK_o4",
-    authDomain: "fir-pro-babfd.firebaseapp.com",
-    projectId: "fir-pro-babfd",
-    storageBucket: "fir-pro-babfd.firebasestorage.app",
-    messagingSenderId: "517736474622",
-    appId: "1:517736474622:web:a6702bbf7007a591f8c2af",
-    measurementId: "G-83309CP6R5",
-    databaseURL: "https://fir-pro-babfd-default-rtdb.firebaseio.com/"
-};
-
-// Initialize Firebase (Compat version uses global 'firebase' object)
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
-
 class Game {
     constructor() {
         this.score = 0;
@@ -51,6 +33,7 @@ class Game {
 
         this.saveScoreBtn.addEventListener('click', () => this.saveScoreHandler());
         this.restartBtn.addEventListener('click', () => {
+            // If they skip saving, just go to start
             this.reset();
         });
 
@@ -77,6 +60,8 @@ class Game {
 
         // Keyboard
         document.addEventListener('keydown', (e) => {
+            // Allow numbers, backspace, enter
+            // Only allowed if game is playing
             if (this.isPlaying) {
                 if ((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'Enter') {
                     this.handleInput(e.key);
@@ -131,104 +116,77 @@ class Game {
         this.isPlaying = false;
         clearInterval(this.timerInterval);
         this.finalScoreEl.textContent = this.score;
-        this.playerNameInput.value = "";
+        this.playerNameInput.value = ""; // Clear previous name
 
+        // UI State for result screen
         this.saveScoreBtn.parentElement.classList.remove('hidden');
-        this.restartBtn.classList.add('hidden');
-        this.restartBtn.textContent = "ほぞん せずに もどる";
-        this.restartBtn.classList.remove('hidden');
+        this.restartBtn.classList.add('hidden'); // Hide simple restart, encourage save
+        this.restartBtn.textContent = "ほぞん せずに もどる"; // Change text to be clear
+        this.restartBtn.classList.remove('hidden'); // Actually show it as a skip option
 
         this.switchScreen('result');
     }
 
     showRanking() {
-        this.switchScreen('ranking');
         this.renderRanking();
+        this.switchScreen('ranking');
     }
 
     saveScoreHandler() {
         const name = this.playerNameInput.value.trim() || "名無しさん";
+        const newScore = { name: name, score: this.score, date: new Date().toISOString() };
 
-        this.saveScoreBtn.disabled = true;
-        this.saveScoreBtn.textContent = "そうしんちゅう...";
+        const scores = this.getScores();
+        scores.push(newScore);
 
-        // Use Compat Reference style
-        const scoresRef = db.ref('scores');
-        scoresRef.push({
-            name: name,
-            score: this.score,
-            date: new Date().toISOString()
-        })
-            .then(() => {
-                this.saveScoreBtn.disabled = false;
-                this.saveScoreBtn.textContent = "きろく する";
-                this.showRanking();
-            })
-            .catch((error) => {
-                console.error("Error saving score: ", error);
-                alert("エラー: スコアの保存に失敗しました。インターネット接続を確認してください。");
-                this.saveScoreBtn.disabled = false;
-                this.saveScoreBtn.textContent = "リトライ";
-            });
+        // Sort by score desc
+        scores.sort((a, b) => b.score - a.score);
+
+        // Keep top 20
+        const topScores = scores.slice(0, 20);
+
+        localStorage.setItem('fill_in_math_scores', JSON.stringify(topScores));
+
+        // Go to ranking
+        this.showRanking();
+    }
+
+    getScores() {
+        const stored = localStorage.getItem('fill_in_math_scores');
+        return stored ? JSON.parse(stored) : [];
     }
 
     renderRanking() {
-        this.rankingListEl.innerHTML = '<div class="ranking-item" style="justify-content:center;">読み込み中...</div>';
+        const scores = this.getScores();
+        let html = `
+            <div class="ranking-item header">
+                <span class="rank-num">#</span>
+                <span style="flex:1; text-align:left; padding-left:1rem;">Name</span>
+                <span>Score</span>
+            </div>
+        `;
 
-        const scoresRef = db.ref('scores');
-        // Order by score, get last 20 (highest, since default sort is ascending)
-        scoresRef.orderByChild('score').limitToLast(20).once('value')
-            .then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    let scoreArray = [];
-                    Object.keys(data).forEach(key => {
-                        scoreArray.push(data[key]);
-                    });
+        if (scores.length === 0) {
+            html += `<div class="ranking-item" style="justify-content:center; opacity:0.6;">まだ データが ないよ</div>`;
+        } else {
+            scores.forEach((s, index) => {
+                const rank = index + 1;
+                let rankClass = "";
+                if (rank === 1) rankClass = "rank-1";
+                if (rank === 2) rankClass = "rank-2";
+                if (rank === 3) rankClass = "rank-3";
 
-                    // Sort descending (b.score - a.score)
-                    scoreArray.sort((a, b) => b.score - a.score);
-
-                    let html = `
-                    <div class="ranking-item header">
-                        <span class="rank-num">#</span>
-                        <span style="flex:1; text-align:left; padding-left:1rem;">Name</span>
-                        <span>Score</span>
+                html += `
+                    <div class="ranking-item ${rankClass}">
+                        <span class="rank-num">${rank}</span>
+                        <span style="flex:1; text-align:left; padding-left:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.name}</span>
+                        <span>${s.score}</span>
                     </div>
                 `;
-
-                    scoreArray.forEach((s, index) => {
-                        const rank = index + 1;
-                        let rankClass = "";
-                        if (rank === 1) rankClass = "rank-1";
-                        if (rank === 2) rankClass = "rank-2";
-                        if (rank === 3) rankClass = "rank-3";
-
-                        html += `
-                        <div class="ranking-item ${rankClass}">
-                            <span class="rank-num">${rank}</span>
-                            <span style="flex:1; text-align:left; padding-left:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.name}</span>
-                            <span>${s.score}</span>
-                        </div>
-                    `;
-                    });
-
-                    this.rankingListEl.innerHTML = html;
-                } else {
-                    this.rankingListEl.innerHTML = `
-                    <div class="ranking-item header">
-                         <span class="rank-num">#</span>
-                         <span style="flex:1; text-align:left; padding-left:1rem;">Name</span>
-                         <span>Score</span>
-                    </div>
-                    <div class="ranking-item" style="justify-content:center; opacity:0.6;">まだ データが ないよ</div>
-                `;
-                }
-            })
-            .catch((error) => {
-                console.error("Error fetching ranking: ", error);
-                this.rankingListEl.innerHTML = `<div class="ranking-item" style="justify-content:center; color:#ef4444;">エラー: データを取得できませんでした</div>`;
             });
+        }
+
+        this.rankingListEl.innerHTML = html;
     }
 
     switchScreen(screenName) {
@@ -239,7 +197,7 @@ class Game {
     updateTimer() {
         this.timerEl.textContent = this.timeLeft;
         if (this.timeLeft <= 10) {
-            this.timerEl.style.color = '#ef4444';
+            this.timerEl.style.color = '#ef4444'; // Red warning
         } else {
             this.timerEl.style.color = '#ffffff';
         }
@@ -247,8 +205,9 @@ class Game {
 
     updateScore() {
         this.scoreEl.textContent = this.score;
+        // Animation
         this.scoreEl.classList.remove('pop');
-        void this.scoreEl.offsetWidth;
+        void this.scoreEl.offsetWidth; // trigger reflow
         this.scoreEl.classList.add('pop');
     }
 
@@ -260,8 +219,9 @@ class Game {
     }
 
     generateProblem() {
-        const type = Math.random() < 0.5 ? 'left' : 'right';
-        const sum = Math.floor(Math.random() * 19) + 2;
+        // Logic: A + B = C
+        const type = Math.random() < 0.5 ? 'left' : 'right'; // Hide A or B
+        const sum = Math.floor(Math.random() * 19) + 2; // 2 to 20
         const a = Math.floor(Math.random() * (sum - 1)) + 1;
         const b = sum - a;
 
@@ -284,7 +244,7 @@ class Game {
         }
 
         this.equationEl.innerHTML = html;
-        this.updateDisplay();
+        this.updateDisplay(); // Show empty input initially
     }
 
     updateDisplay() {
@@ -292,6 +252,7 @@ class Game {
         if (blankEl) {
             blankEl.textContent = this.userInput === "" ? "?" : this.userInput;
 
+            // Visual feedback as they type
             if (this.userInput !== "") {
                 blankEl.style.color = '#ffffff';
             } else {
@@ -307,17 +268,19 @@ class Game {
         let correctVal;
 
         if (this.currentProblem.hidden === 'left') {
-            correctVal = this.currentProblem.a;
+            correctVal = this.currentProblem.a; // ? was a
         } else {
-            correctVal = this.currentProblem.b;
+            correctVal = this.currentProblem.b; // ? was b
         }
 
         if (val === correctVal) {
-            this.score += 10;
+            // Correct
+            this.score += 10; // Simple scoring
             this.updateScore();
             this.showFeedback(true);
             this.nextProblem();
         } else {
+            // Incorrect
             this.showFeedback(false);
             this.shakeScreen();
             this.userInput = "";
@@ -326,6 +289,7 @@ class Game {
     }
 
     showFeedback(isCorrect) {
+        // Optional confetti or simple flash
         if (!isCorrect) {
             this.feedbackEl.textContent = "ざんねん！";
             this.feedbackEl.style.color = '#ef4444';
